@@ -9,3 +9,13 @@ id,title,artist,genre,mood,energy,tempo_bpm,valence,danceability,acousticness
 8,Night Drive Loop,Neon Echo,synthwave,moody,0.75,110,0.49,0.73,0.22
 9,Focus Flow,LoRoom,lofi,focused,0.40,80,0.59,0.60,0.78
 10,Rooftop Lights,Indigo Parade,indie pop,happy,0.76,124,0.81,0.82,0.35
+11,Desert Frequencies,Sand Circuits,electronic,intense,0.88,140,0.42,0.91,0.04
+12,Velvet Underground Walk,Echo Chamber,r&b,relaxed,0.55,96,0.78,0.69,0.44
+13,Monsoon Letters,Priya Nair,classical,melancholic,0.22,68,0.38,0.20,0.97
+14,Favela Funk,Ritmo Livre,funk,happy,0.89,128,0.91,0.95,0.06
+15,Pine Tree Radio,The Wanderers,folk,nostalgic,0.34,104,0.72,0.43,0.88
+16,Neon Gospel,Chrome Saints,gospel,uplifting,0.72,108,0.93,0.74,0.38
+17,Subzero Drift,Coldframe,metal,angry,0.97,168,0.21,0.52,0.03
+18,Havana Daydream,Trio Soleil,latin,happy,0.79,116,0.88,0.87,0.27
+19,Watercolor Mind,Haze Monroe,dream pop,nostalgic,0.48,98,0.68,0.55,0.62
+20,Terminal Bloom,Axiom,jazz,focused,0.61,102,0.64,0.66,0.57
