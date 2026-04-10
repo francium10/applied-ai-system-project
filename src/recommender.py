@@ -81,9 +81,9 @@ WEIGHTS: Dict[str, float] = {
     "genre": 3.0,       # Strong categorical match — most influential signal
     "mood": 2.0,        # Second most important — sets the emotional tone
     "energy": 2.0,      # Continuous proximity score — how close the vibe is
-    "acousticness": 1.0,  # Bonus for matching acoustic preference
+    "acousticness": 1.0, # Bonus for matching acoustic preference
     "valence": 1.0,     # Mild positiveness alignment
-    "danceability": 0.5,  # Subtle supporting feature
+    "danceability": 0.5, # Subtle supporting feature
 }
 
 MAX_POSSIBLE_SCORE: float = sum(WEIGHTS.values())  # Used for normalizing
@@ -216,44 +216,57 @@ def score_song(
     reasons: List[str] = []
 
     # --- Genre match (categorical) ----------------------------------------
+    # Binary: either the genre matches exactly or it doesn't.
+    # Weighted highest because genre is the strongest signal of musical taste.
     if song.get("genre", "").lower() == user_prefs.get("genre", "").lower():
         score += WEIGHTS["genre"]
-        reasons.append(f"matches your favorite genre ({song['genre']})")
+        reasons.append(f"genre match — {song['genre']} (+{WEIGHTS['genre']})")
 
     # --- Mood match (categorical) -----------------------------------------
+    # Binary: mood either aligns or it doesn't. Sets the emotional context.
     if song.get("mood", "").lower() == user_prefs.get("mood", "").lower():
         score += WEIGHTS["mood"]
-        reasons.append(f"matches your preferred mood ({song['mood']})")
+        reasons.append(f"mood match — {song['mood']} (+{WEIGHTS['mood']})")
 
     # --- Energy proximity (continuous) ------------------------------------
-    # Reward songs whose energy is *close* to what the user wants.
-    # A perfect match (distance = 0) contributes the full weight.
-    energy_distance = abs(user_prefs.get(
-        "energy", 0.5) - song.get("energy", 0.5))
-    energy_contribution = WEIGHTS["energy"] * (1.0 - energy_distance)
+    # Uses proximity scoring instead of a binary match:
+    #   contribution = weight × (1 − distance)
+    # A perfect match (distance=0) earns the full weight.
+    # A total mismatch (distance=1) earns 0. No penalty below 0.
+    # This is why we need a Scoring Rule separate from a binary check —
+    # it rewards "close enough" without hard cutoffs.
+    energy_distance = abs(user_prefs.get("energy", 0.5) - song.get("energy", 0.5))
+    energy_contribution = round(WEIGHTS["energy"] * (1.0 - energy_distance), 2)
     score += energy_contribution
     if energy_distance <= 0.15:
         reasons.append(
-            f"energy level ({song['energy']:.2f}) is close to your target"
+            f"energy match — {song['energy']:.2f} vs target "
+            f"{user_prefs.get('energy', 0.5):.2f} (+{energy_contribution})"
         )
 
     # --- Acousticness preference (boolean alignment) ----------------------
+    # Threshold at 0.6: songs above = acoustic, below = electronic.
+    # Adds weight when the song's character aligns with the user's preference.
     song_is_acoustic = song.get("acousticness", 0.0) >= 0.6
     if user_prefs.get("likes_acoustic", False) == song_is_acoustic:
         score += WEIGHTS["acousticness"]
         label = "acoustic" if song_is_acoustic else "electronic"
-        reasons.append(f"has the {label} feel you prefer")
+        reasons.append(f"{label} feel matches preference (+{WEIGHTS['acousticness']})")
 
-    # --- Valence (emotional clarity) -------------------------------------
-    # Higher valence songs feel cheerful; lower feel melancholic.
-    # We reward songs that are emotionally expressive either way.
+    # --- Valence (emotional clarity) --------------------------------------
+    # Rewards songs that are emotionally expressive — either clearly cheerful
+    # (valence → 1.0) or clearly melancholic (valence → 0.0).
+    # Songs in the middle (valence ≈ 0.5) score lower on this dimension.
     valence = song.get("valence", 0.5)
-    valence_contribution = WEIGHTS["valence"] * (1.0 - abs(0.5 - valence))
+    valence_contribution = round(WEIGHTS["valence"] * (1.0 - abs(0.5 - valence)), 2)
     score += valence_contribution
 
-    # --- Danceability (mild supporting signal) ---------------------------
-    danceability_contribution = WEIGHTS["danceability"] * \
-        song.get("danceability", 0.0)
+    # --- Danceability (mild supporting signal) ----------------------------
+    # Proportional: a more danceable track gets a slightly higher score.
+    # Low weight (0.5) so it never overrides the primary signals.
+    danceability_contribution = round(
+        WEIGHTS["danceability"] * song.get("danceability", 0.0), 2
+    )
     score += danceability_contribution
 
     return round(score, 4), reasons
@@ -267,6 +280,24 @@ def recommend_songs(
     """
     Score all songs, rank them, and return the top-k recommendations.
 
+    This function is the Ranking Rule — it uses score_song() as a judge
+    for every song in the catalog, then orders the results from best to worst.
+
+    Why sorted() instead of .sort()
+    --------------------------------
+    list.sort()  — mutates the list IN PLACE, returns None.
+                   Use when you want to permanently reorder the original list
+                   and don't need to keep the unsorted version.
+
+    sorted()     — returns a NEW sorted list, original is untouched.
+                   Use when you want to preserve the original order, or when
+                   sorting a generator / other iterable (not just lists).
+
+    We use sorted() here because:
+      1. We want to keep the original `songs` list unchanged for reusability.
+      2. We're building `scored` as we go — sorted() on the final list is
+         cleaner than building-then-sorting in place.
+
     Parameters
     ----------
     user_prefs : Dict with keys: genre, mood, energy, likes_acoustic.
@@ -276,19 +307,20 @@ def recommend_songs(
     Returns
     -------
     List of (song_dict, score, explanation_string) tuples, sorted by
-    score descending.
+    score descending. Length is min(k, len(songs)).
     """
     scored: List[Tuple[Dict, float, str]] = []
 
+    # The Scoring Loop — every song gets judged by the same rules
     for song in songs:
         total_score, reasons = score_song(user_prefs, song)
-        explanation = "; ".join(
-            reasons) if reasons else "General catalog suggestion"
+        explanation = "; ".join(reasons) if reasons else "General catalog suggestion"
         scored.append((song, total_score, explanation))
 
-    # Sort by score descending; secondary sort by title for determinism
-    scored.sort(key=lambda item: (-item[1], item[0]["title"]))
-    return scored[:k]
+    # sorted() returns a new list (original `songs` stays intact).
+    # Key: negate score for descending order, use title as tiebreaker.
+    ranked = sorted(scored, key=lambda item: (-item[1], item[0]["title"]))
+    return ranked[:k]
 
 
 # ---------------------------------------------------------------------------
