@@ -248,10 +248,10 @@ applied ML.
 Screen Shots 
 
 ### Pop Fan Output
-![Pop fan recommendations](images/output1.png)
+![Pop fan recommendations](images/output2.png)
 
 ### Chill Studier Output
-![Chill studier recommendations](images/output2.png)
+![Chill studier recommendations](images/output1.png)
 
 ### LATE_NIGHT_DRIVER
 ### Chill Studier Output
