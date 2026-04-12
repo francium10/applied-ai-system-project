@@ -245,6 +245,74 @@ shapes what users click) remains one of the hardest unsolved problems in
 applied ML.
 
 
+
+
+
+## Optional Extensions
+
+All four optional challenges were implemented and are demonstrated when you run `python -m src.main`.
+
+---
+
+### Challenge 1: Advanced Song Features
+
+Three new attributes were added to `data/songs.csv` and scored in `src/recommender.py`:
+
+| Feature | Range | How it scores |
+|---|---|---|
+| `popularity` | 0–100 | Normalized to 0–1, bonus up to +0.50 |
+| `release_decade` | e.g. "2020s" | +0.50 if it matches the user's preferred era |
+| `mood_tags` | e.g. "euphoric\|bright\|upbeat" | Up to +1.00 based on overlap ratio with user's tag preferences |
+
+Users can now specify a `preferred_decade` and a list of `preferred_mood_tags` in their profile.
+A user who wants "euphoric" and "bright" songs gets a higher score for tracks that share both tags,
+and a partial score for tracks that share just one.
+
+---
+
+### Challenge 2: Multiple Scoring Modes
+
+Four swappable ranking strategies were built using a `ScoringMode` enum and the Strategy pattern.
+Pass any mode to `recommend_songs()` to change what the system prioritizes — no logic changes needed.
+
+| Mode | What it emphasizes |
+|---|---|
+| `BALANCED` | Default — genre 3×, mood 2×, energy 2× |
+| `MOOD_FIRST` | Emotional vibe dominates — good for playlist curation |
+| `ENERGY_FOCUS` | Energy proximity is the top signal — good for workout or study sessions |
+| `GENRE_FIRST` | Genre is the only categorical signal that matters — strongest filter bubble |
+
+```python
+# example usage
+results = recommend_songs(user_prefs, songs, k=5, mode=ScoringMode.MOOD_FIRST)
+```
+
+---
+
+### Challenge 3: Diversity and Fairness Logic
+
+A diversity penalty prevents the same artist from dominating the top results.
+When `apply_diversity_penalty=True`, any song whose artist already appears among the
+selected results has its score multiplied by **0.6** (a 40% reduction) before final ranking.
+
+```python
+results = recommend_songs(user_prefs, songs, k=5, apply_diversity_penalty=True)
+```
+
+In testing with the `chill_studier` profile, LoRoom had two high-scoring lofi tracks.
+Without the penalty both appeared in the top 3. With it, the second LoRoom track dropped
+to #4, and a different artist surfaced in its place — giving the listener more variety.
+
+---
+
+### Challenge 4: Visual Summary Table
+
+The terminal output was redesigned as a structured ASCII table with no external dependencies.
+Every recommendation includes a fixed-width score bar showing how close the song came to a
+perfect match, and each contributing reason is listed beneath its row.
+
+
+
 Screen Shots 
 
 ### Pop Fan Output
