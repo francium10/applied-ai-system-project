@@ -253,6 +253,5 @@ Screen Shots
 ### Chill Studier Output
 ![Chill studier recommendations](images/output1.png)
 
-### LATE_NIGHT_DRIVER
-### Chill Studier Output
+### LATE_NIGHT_DRIVER Output
 ![Late Night driver recommendations](images/output3.png)
