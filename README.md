@@ -243,3 +243,16 @@ collaborative signals on top of content features precisely to escape this
 trap. Even then, the feedback loop (recommending what users click, which
 shapes what users click) remains one of the hardest unsolved problems in
 applied ML.
+
+
+Screen Shots 
+
+### Pop Fan Output
+![Pop fan recommendations](images/output1.png)
+
+### Chill Studier Output
+![Chill studier recommendations](images/output2.png)
+
+### LATE_NIGHT_DRIVER
+### Chill Studier Output
+![Late Night driver recommendations](images/output3.png)
