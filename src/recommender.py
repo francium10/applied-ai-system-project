@@ -81,9 +81,9 @@ WEIGHTS: Dict[str, float] = {
     "genre": 3.0,       # Strong categorical match — most influential signal
     "mood": 2.0,        # Second most important — sets the emotional tone
     "energy": 2.0,      # Continuous proximity score — how close the vibe is
-    "acousticness": 1.0, # Bonus for matching acoustic preference
+    "acousticness": 1.0,  # Bonus for matching acoustic preference
     "valence": 1.0,     # Mild positiveness alignment
-    "danceability": 0.5, # Subtle supporting feature
+    "danceability": 0.5,  # Subtle supporting feature
 }
 
 MAX_POSSIBLE_SCORE: float = sum(WEIGHTS.values())  # Used for normalizing
@@ -235,7 +235,8 @@ def score_song(
     # A total mismatch (distance=1) earns 0. No penalty below 0.
     # This is why we need a Scoring Rule separate from a binary check —
     # it rewards "close enough" without hard cutoffs.
-    energy_distance = abs(user_prefs.get("energy", 0.5) - song.get("energy", 0.5))
+    energy_distance = abs(user_prefs.get(
+        "energy", 0.5) - song.get("energy", 0.5))
     energy_contribution = round(WEIGHTS["energy"] * (1.0 - energy_distance), 2)
     score += energy_contribution
     if energy_distance <= 0.15:
@@ -251,14 +252,16 @@ def score_song(
     if user_prefs.get("likes_acoustic", False) == song_is_acoustic:
         score += WEIGHTS["acousticness"]
         label = "acoustic" if song_is_acoustic else "electronic"
-        reasons.append(f"{label} feel matches preference (+{WEIGHTS['acousticness']})")
+        reasons.append(
+            f"{label} feel matches preference (+{WEIGHTS['acousticness']})")
 
     # --- Valence (emotional clarity) --------------------------------------
     # Rewards songs that are emotionally expressive — either clearly cheerful
     # (valence → 1.0) or clearly melancholic (valence → 0.0).
     # Songs in the middle (valence ≈ 0.5) score lower on this dimension.
     valence = song.get("valence", 0.5)
-    valence_contribution = round(WEIGHTS["valence"] * (1.0 - abs(0.5 - valence)), 2)
+    valence_contribution = round(
+        WEIGHTS["valence"] * (1.0 - abs(0.5 - valence)), 2)
     score += valence_contribution
 
     # --- Danceability (mild supporting signal) ----------------------------
@@ -314,7 +317,8 @@ def recommend_songs(
     # The Scoring Loop — every song gets judged by the same rules
     for song in songs:
         total_score, reasons = score_song(user_prefs, song)
-        explanation = "; ".join(reasons) if reasons else "General catalog suggestion"
+        explanation = "; ".join(
+            reasons) if reasons else "General catalog suggestion"
         scored.append((song, total_score, explanation))
 
     # sorted() returns a new list (original `songs` stays intact).
@@ -324,7 +328,7 @@ def recommend_songs(
 
 
 # ---------------------------------------------------------------------------
-# Private conversion helpers
+# Private conversion helpers...
 # ---------------------------------------------------------------------------
 
 
