@@ -207,7 +207,7 @@ without a paid API key — a deliberate accessibility decision for a classroom p
 
 ## Testing Summary
 
-```
+``
 tests/test_recommender.py     6 / 6 passed   core scoring logic
 tests/test_guardrails.py      8 / 8 passed   input validation
 tests/test_rag.py             5 / 6 passed   retrieval accuracy
