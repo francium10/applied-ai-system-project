@@ -45,12 +45,59 @@ _VOCAB: List[str] = [
     "driving", "raw", "peaceful", "soft", "cosmic", "warm", "cinematic",
     "dark", "minimal", "calm", "smooth", "sensual", "romantic", "breezy",
     "soulful", "playful", "hypnotic", "tender", "sad", "acoustic",
-    # Energy descriptors
-    "high", "low", "medium", "energetic", "quiet", "loud", "fast", "slow",
-    # Context words users might type
-    "run", "workout", "study", "sleep", "party", "morning", "night",
-    "drive", "highway", "sad", "cry", "dance", "focus", "relax",
+    # Energy descriptors — includes both "energetic" AND "energy" (previously missing)
+    "high", "low", "medium", "energetic", "energy", "quiet", "loud", "fast", "slow",
+    "intense", "powerful", "electric",
+    # Context words users might type in natural language queries
+    "run", "running", "workout", "gym", "study", "studying", "sleep", "sleeping",
+    "party", "morning", "night", "late", "drive", "driving", "highway", "road",
+    "cry", "dance", "dancing", "focus", "relax", "relaxing", "vibe", "vibes",
+    "sad", "happy", "hype", "pump", "chill", "good",
 ]
+
+# ---------------------------------------------------------------------------
+# Synonym / alias expansion — maps common user words to vocab tokens
+# This is the fix for natural language queries that use words the vocab
+# doesn't contain. e.g. "something" → ignored, "energetic" captures "energy"
+# ---------------------------------------------------------------------------
+
+_SYNONYMS: Dict[str, str] = {
+    # Energy-related
+    "energetic":  "energy",
+    "powerful":   "energy",
+    "electric":   "energy",
+    "hyped":      "hype",
+    "pumped":     "pump",
+    # Activity context
+    "jogging":    "run",
+    "jog":        "run",
+    "exercise":   "workout",
+    "lifting":    "gym",
+    "studying":   "study",
+    "working":    "focus",
+    "sleeping":   "sleep",
+    "cruising":   "drive",
+    "commute":    "drive",
+    "commuting":  "drive",
+    # Mood aliases
+    "sad":        "melancholic",
+    "melancholy": "melancholic",
+    "happy":      "happy",
+    "joyful":     "happy",
+    "blissful":   "euphoric",
+    "elated":     "euphoric",
+    "excited":    "upbeat",
+    "angry":      "aggressive",
+    "dark":       "dark",
+    "moody":      "moody",
+    "atmospheric": "cinematic",
+    # Time of day
+    "evening":    "night",
+    "midnight":   "night",
+    "sunrise":    "morning",
+    "dawn":       "morning",
+    "afternoon":  "chill",
+}
 
 VOCAB_SIZE = len(_VOCAB)
 _TOKEN_INDEX = {token: i for i, token in enumerate(_VOCAB)}
@@ -111,13 +158,26 @@ def _song_to_feature_string(song: Dict) -> str:
 
     Genre and mood are included twice to up-weight them — mirroring the
     higher weights they carry in the scoring engine (3.0 and 2.0).
+
+    Energy level is now also converted to a descriptor ("high", "medium",
+    "low") so a query containing "high energy" can match high-energy songs
+    via cosine similarity even when the user doesn't specify a genre.
     """
+    energy = song.get("energy", 0.5)
+    if energy >= 0.75:
+        energy_desc = "high energy energetic"
+    elif energy >= 0.45:
+        energy_desc = "medium energy"
+    else:
+        energy_desc = "low energy calm"
+
     parts = [
         song.get("genre", ""),
-        song.get("genre", ""),       # doubled — mirrors genre weight 3.0
+        song.get("genre", ""),           # doubled — mirrors genre weight 3.0
         song.get("mood", ""),
-        song.get("mood", ""),        # doubled — mirrors mood weight 2.0
+        song.get("mood", ""),            # doubled — mirrors mood weight 2.0
         song.get("mood_tags", "").replace("|", " "),
+        energy_desc,                     # energy level as searchable text
     ]
     return " ".join(p for p in parts if p).lower()
 
@@ -125,6 +185,10 @@ def _song_to_feature_string(song: Dict) -> str:
 def _vectorise(text: str) -> List[float]:
     """
     Convert text into a bag-of-words vector over _VOCAB.
+
+    Applies synonym expansion before lookup so natural language queries
+    (e.g. "energetic morning run") map correctly to vocabulary tokens
+    even when the exact word isn't in _VOCAB.
 
     Each position holds the normalised term frequency of that token.
     """
@@ -135,8 +199,10 @@ def _vectorise(text: str) -> List[float]:
         return vector
 
     for token in tokens:
-        if token in _TOKEN_INDEX:
-            vector[_TOKEN_INDEX[token]] += 1.0
+        # Expand synonym → canonical vocab token if needed
+        resolved = _SYNONYMS.get(token, token)
+        if resolved in _TOKEN_INDEX:
+            vector[_TOKEN_INDEX[resolved]] += 1.0
 
     # L2-normalise so cosine similarity is well-behaved
     magnitude = math.sqrt(sum(x * x for x in vector))

@@ -77,10 +77,13 @@ class TestEmbedSong:
         idx = _TOKEN_INDEX.get("pop")
         assert idx is not None and vec[idx] > 0
 
-    def test_empty_song_returns_zero_vector(self):
-        empty_song = {"genre": "", "mood": "", "mood_tags": ""}
+    def test_empty_song_returns_sparse_vector(self):
+        """Empty genre/mood/tags song still gets energy descriptor tokens."""
+        empty_song = {"genre": "", "mood": "", "mood_tags": "", "energy": 0.5}
         vec = embed_song(empty_song)
-        assert all(v == 0.0 for v in vec)
+        # energy=0.5 → "medium energy" → at least one token active
+        assert any(
+            v > 0 for v in vec), "Expected energy descriptor to activate at least one token"
 
 
 # ---------------------------------------------------------------------------

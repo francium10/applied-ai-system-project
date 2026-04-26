@@ -11,7 +11,7 @@
 
 ## 🎥 Demo Walkthrough
 
-> **[▶ Watch the Loom walkthrough](https://loom.com/YOUR_LINK_HERE)**
+> **[▶ Watch the Loom walkthrough](https://www.loom.com/share/136b5384c67c420798fe299e29502349)**
 >
 > The video demonstrates:
 > - End-to-end run with 3 different input types (structured profile, natural language, adversarial)
